@@ -1,0 +1,19 @@
+import requests
+import re
+import time
+local = time.strftime("%Y.%m.%d")
+url = 'https://www.bing.com/?mkt=zh-CN&FORM=BEHPTB'
+con = requests.get(url)
+content = con.text
+pattern = r"(/th.*?.jpg)"
+a = re.findall(pattern, content, re.S)[0]
+pattern_x = r"(sh_cp.*?sc_light.*?aria-label)"
+b = re.findall(pattern_x, content, re.S)[0]
+c = re.findall('[\u4e00-\u9fa5]+', b, re.S)[0]
+print(c)
+picUrl = 'https://cn.bing.com' + a
+picNm = local + c
+read = requests.get(picUrl)
+f = open('%s.jpg' % picNm, 'wb')
+f.write(read.content)
+f.close()
