@@ -1,8 +1,6 @@
 import requests
 import re
 import time
-import xlwt
-import collections
 
 local = time.strftime("%Y.%m.%d")
 headers = {
