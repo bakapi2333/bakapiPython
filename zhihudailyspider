@@ -11,16 +11,16 @@ req = requests.get(url=url, headers=headers)
 content = req.text
 pattern = r'(<span class="title">.*?</span>)'
 a = re.findall(pattern, content, re.S)
-b=str(a).replace('<span class="title">','')
-c=b.replace('</span>','')
-d=c.replace('[','')
-f=d.replace(']','')
-e=f.replace('\'','')
+b = str(a).replace('<span class="title">', '')
+c = b.replace('</span>', '')
+d = c.replace('[', '')
+f = d.replace(']', '')
+e = f.replace('\'', '')
 # 使用表达式过滤不需要的字符
 pattern_xx = r'(/story/[0-9]+)'
 # 使用正则表达式拉取title链接
 link = re.findall(pattern_xx, content, re.S)
-name=e.split(',')
+name = e.split(',')
 notenm = "知乎日报" + local
 lenlink = len(link)
 lenname = len(name)
@@ -28,10 +28,10 @@ print(notenm)
 if lenlink != lenname:
     print("ERROR！")
 else:
-    for i in range(0,lenlink):
-        re_link="http://daily.zhihu.com"+link[i]
-        qqq=name[i]+re_link
+    for i in range(0, lenlink):
+        re_link = "http://daily.zhihu.com" + link[i]
+        qqq = name[i] + re_link
         print(qqq)
-        qq=qqq.encode('utf-8')
-        w=open('%s.txt'%notenm,'ab+')
-        w.write(qq+b'\n')
+        qq = qqq.encode('utf-8')
+        w = open('%s.txt' % notenm, 'ab+')
+        w.write(qq + b'\n')
