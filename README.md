@@ -14,3 +14,10 @@ https://github.com/bakapi2333/bakapiPython/blob/main/bingbackgroundimgSpider
 zhihudaily spider
 
 https://github.com/bakapi2333/bakapiPython/blob/main/zhihudailyspider
+
+
+Bilibili排行榜爬虫
+
+Bilibili rank100 spider
+
+https://github.com/bakapi2333/bakapiPython/blob/main/Bilibilirank100Spider
