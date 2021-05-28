@@ -1,0 +1,216 @@
+import re
+import requests
+import pymysql
+import time
+
+rank = r'data-rank="(\d*)" class="rank-item"'
+# 排名
+link = (r'<div class="img"><a href="//www.bilibili.com/video/(.*?)" target="_blank">')
+# 链接
+playn = r'<i class="b-icon play"></i>\n              (.*?)\n            </span>'
+# 播放次数
+danmaku = (r'<i class="b-icon view"></i>\n              (.*?)\n            </span>')
+# 弹幕数
+user = (r'<i class="b-icon author"></i>\n                (.*?)\n              </span>')
+# UP主
+score = (r'<div class="pts"><div>(\d*)</div>综合得分')
+# 综合得分
+movie = (r'target="_blank" class="title">(.*?)</a> <!---->')
+
+
+# 视频名称
+def createDb():
+    # 创建数据库
+    print("创建数据库：BILIBILI")
+    try:
+        conn = pymysql.connect(
+            host="localhost",
+            port=3306,
+            user="root",
+            password="root",
+            charset="utf8"
+        )
+        cur = conn.cursor()
+        createSql = "create database if not exists bilibili default charset utf8"
+        cur.execute(createSql)
+        conn.commit()
+        print("提交成功")
+    except pymysql.Error as e:
+        print("pyError", e.args[0], e.args[1])
+    finally:
+        cur.close()
+        conn.close()
+
+
+def createTable(ls):
+    # 创建表
+    local=int(ls[0])
+    print("创建表...")
+    try:
+        conn = pymysql.connect(host="localhost",
+                               port=3306,
+                               user="root",
+                               password="root",
+                               db="bilibili",
+                               charset="utf8")
+        cur = conn.cursor()
+        createSql = "create table `%s` (" \
+                    " link varchar(100)," \
+                    " rank varchar(100)," \
+                    " playn varchar(100)," \
+                    " danmaku varchar(100)," \
+                    " user varchar(100)," \
+                    " score varchar(100)," \
+                    " time int(100)," \
+                    " movie varchar (100)) default character set utf8;"
+
+        cur.execute(createSql, local)
+        conn.commit()
+        print("创建成功...")
+        print("开始进入拉取数据...")
+        insertdb(ls)
+        return local
+    except pymysql.Error as e:
+        print("pymysql Error: ", e.args[0], e.args[1])
+    finally:
+        cur.close()
+        conn.close()
+
+def insertdb(ls):
+    #写入数据到表
+    local=int(ls[0])
+    yn=ls[1]
+    baseurl = "https://www.bilibili.com/v/popular/rank/all"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
+    }
+    req = requests.get(url=baseurl, headers=headers)
+    content = req.text
+    rk = re.findall(rank, content, re.S)
+    lk = re.findall(link, content, re.S)
+    pl = re.findall(playn, content, re.S)
+    dm = re.findall(danmaku, content, re.S)
+    us = re.findall(user, content, re.S)
+    sc = re.findall(score, content, re.S)
+    mv = re.findall(movie, content, re.S)
+    conn = pymysql.connect(host="localhost",
+                           port=3306,
+                           user="root",
+                           password="root",
+                           db="bilibili",
+                           charset="utf8")
+    cur = conn.cursor()
+    sql = "insert into `%s` (link,rank,playn,danmaku,user,score,movie,time) values (%s,%s,%s,%s,%s,%s,%s,%s);"
+    if len(rk) != 100 & len(lk) != 100 & len(pl) != 100 & len(dm) != 100 & len(us) != 100 & len(sc) != 100:
+        print("拉取数据出错，请重试")
+    else:
+        data = []
+        print("正在写入数据...请稍后...")
+        for i in range(100):
+            data.append(local)
+            data.append(lk[i])
+            data.append(rk[i])
+            data.append(pl[i])
+            data.append(dm[i])
+            data.append(us[i])
+            data.append(sc[i])
+            data.append(mv[i])
+            data.append(local)
+            cur.execute(sql, data)
+            data.clear()
+            conn.commit()
+    conn.close()
+    cur.close()
+    print("Done")
+    if yn==0:
+        autospride()
+    elif yn==1:
+        auto()
+
+    return data
+
+def checktb():
+    #确认距离上次抓取数据过了多久
+    local = int(time.time())
+    yn=0
+    ls = []
+    ls.append(local)
+    ls.append(yn)
+    conn = pymysql.connect(host="localhost",
+                           port=3306,
+                           user="root",
+                           password="root",
+                           db="bilibili",
+                           charset="utf8")
+    cur = conn.cursor()
+    check="SHOW TABLES;"
+    cur.execute(check)
+    aa=cur.fetchall()
+    if aa:
+        cc=len(aa)-1
+        qq=str(aa[cc])
+        bb=qq[2:-3]
+        bb=int(bb)
+        if local-bb<=3600:
+            print("距离上次更新数据库未超过一小时，请确认是否继续执行操作")
+            strA = input("Y/N?\n")
+            if strA == 'y':
+                print('正在执行...')
+                createTable(ls)
+            elif strA == 'Y':
+                print('正在执行...')
+                createTable(ls)
+            elif strA == 'N':
+                conn.close()
+                cur.close()
+                print('正在退出...')
+                exit()
+            elif strA == 'n':
+                conn.close()
+                cur.close()
+                print('正在退出...')
+                exit()
+            else:
+                print('输入错误，程序正在退出...')
+        else:
+            createTable(ls)
+    else:
+        createTable(ls)
+
+def autospride():
+    #确认是否进入自动拉取
+    print("是否进入自动拉取程序？自动拉取为每隔三小时自动拉取一次。")
+    strA=input("Y/N?\n")
+    if strA == 'y':
+        print('正在执行...')
+        auto()
+    elif strA == 'Y':
+        print('正在执行...')
+        auto()
+    elif strA == 'N':
+        print('正在退出...')
+        exit()
+    elif strA == 'n':
+        print('正在退出...')
+        exit()
+    else:
+        print("输入错误，程序正在退出...")
+
+def auto():
+    #自动拉取sleep模块
+    print("已进入自动拉取程序，请勿关闭此程序XD")
+    yn=1
+    time.sleep(10800)
+    local=time.time()
+    ls=[]
+    ls.append(local)
+    ls.append(yn)
+    createTable(ls)
+
+
+if __name__ == "__main__":
+    baseurl = "https://www.bilibili.com/v/popular/rank/all"
+    # createDb()
+    checktb()
+    #第一次使用请事先开启createDB(),后开启checktb()
+    #后续使用仅需开启checktb()
